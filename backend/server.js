@@ -17,8 +17,9 @@ app.use('/api/messages', messageRoutes);
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
+
 const io = new Server(server, {
-  cors: { origin: '*' } 
+  cors: { origin: '*' }
 });
 
 const onlineUsers = new Map();
@@ -46,10 +47,12 @@ io.on('connection', (socket) => {
         recipient: to,
         content
       });
+
       const toSocket = onlineUsers.get(String(to));
       if (toSocket) {
         io.to(toSocket).emit('newMessage', msg);
       }
+
       socket.emit('messageSent', msg);
     } catch (err) {
       console.error(err);
@@ -63,6 +66,6 @@ io.on('connection', (socket) => {
   });
 });
 
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGO_URI)
   .then(() => server.listen(PORT, () => console.log('Server running on', PORT)))
   .catch(err => console.error('MongoDB error', err));

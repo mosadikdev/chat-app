@@ -1,21 +1,38 @@
 const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message');
-const auth = require('../middleware/auth');
+const auth = require('../middleware/auth'); 
 
-router.get('/:userId', auth, async (req, res) => {
-  const myId = req.user.id;
-  const otherId = req.params.userId;
+router.post('/', auth, async (req, res) => {
+  try {
+    const { recipient, content } = req.body;
+
+    const message = await Message.create({
+      sender: req.user.id, 
+      recipient,
+      content
+    });
+
+    res.json(message);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/:recipientId', auth, async (req, res) => {
   try {
     const messages = await Message.find({
       $or: [
-        { sender: myId, recipient: otherId },
-        { sender: otherId, recipient: myId }
+        { sender: req.user.id, recipient: req.params.recipientId },
+        { sender: req.params.recipientId, recipient: req.user.id }
       ]
-    }).sort({ createdAt: 1 });
+    }).sort({ createdAt: 1 }); 
+
     res.json(messages);
   } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
