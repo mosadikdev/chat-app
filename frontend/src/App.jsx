@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SocketProvider } from './contexts/SocketContext';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import ChatContainer from './components/Chat/ChatContainer';
 
 const AppContent = () => {
   const { user, loading } = useAuth();
@@ -26,34 +28,15 @@ const AppContent = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">
-          Welcome, {user.name}!
-        </h1>
-        <p className="text-gray-600 mb-4">
-          You are successfully logged in.
-        </p>
-        <button
-          onClick={() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.reload();
-          }}
-          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Logout
-        </button>
-      </div>
-    </div>
-  );
+  return <ChatContainer />;
 };
 
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <SocketProvider>
+        <AppContent />
+      </SocketProvider>
     </AuthProvider>
   );
 }
