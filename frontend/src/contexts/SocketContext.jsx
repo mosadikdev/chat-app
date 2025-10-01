@@ -53,6 +53,26 @@ export const SocketProvider = ({ children }) => {
         console.log('Disconnected from server');
       });
 
+      newSocket.on('userOnline', (userId) => {
+        console.log('User online:', userId);
+        setOnlineUsers(prev => new Map(prev.set(userId, true)));
+      });
+
+      newSocket.on('userOffline', (userId) => {
+        console.log('User offline:', userId);
+        setOnlineUsers(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(userId);
+          return newMap;
+        });
+      });
+
+      newSocket.on('onlineUsers', (users) => {
+        console.log('Online users:', users);
+        const usersMap = new Map(users.map(user => [user.id, true]));
+        setOnlineUsers(usersMap);
+      });
+
       setSocket(newSocket);
 
       return () => {

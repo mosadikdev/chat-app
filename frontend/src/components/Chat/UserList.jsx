@@ -1,21 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSocket } from '../../contexts/SocketContext';
+import { usersAPI } from '../../services/api';
 
 const UserList = ({ selectedUser, onSelectUser }) => {
   const { user } = useAuth();
+  const { onlineUsers } = useSocket();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    const mockUsers = [
-      { id: 'user2', name: 'John Doe', email: 'john@example.com' },
-      { id: 'user3', name: 'Jane Smith', email: 'jane@example.com' },
-      { id: 'user4', name: 'Mike Johnson', email: 'mike@example.com' },
-    ];
-    
-    setUsers(mockUsers);
-    setLoading(false);
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const usersData = await usersAPI.getUsers();
+      setUsers(usersData);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (query) => {
+    setSearchQuery(query);
+    if (query.trim() === '') {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results = await usersAPI.searchUsers(query);
+      setSearchResults(results);
+    } catch (err) {
+      console.error('Error searching users:', err);
+      setSearchResults([]);
+    }
+  };
+
+  const displayUsers = searchQuery.trim() ? searchResults : users;
 
   if (loading) {
     return (
@@ -36,44 +66,69 @@ const UserList = ({ selectedUser, onSelectUser }) => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto flex flex-col">
       <div className="p-4 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-          Online Users
-        </h3>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute right-3 top-2.5">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
       </div>
-      
-      <div className="divide-y divide-gray-100">
-        {users.map((userItem) => (
-          <button
-            key={userItem.id}
-            onClick={() => onSelectUser(userItem.id)}
-            className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-              selectedUser === userItem.id ? 'bg-blue-50 border-r-2 border-blue-600' : ''
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-sm">
-                    {userItem.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {userItem.name}
-                </p>
-                <p className="text-sm text-gray-500 truncate">
-                  {userItem.email}
-                </p>
-              </div>
-              <div className="flex-shrink-0">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+            {isSearching ? 'Search Results' : `All Users (${users.length})`}
+          </h3>
+        </div>
+        
+        <div className="divide-y divide-gray-100">
+          {displayUsers.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              {isSearching ? 'No users found' : 'No users available'}
             </div>
-          </button>
-        ))}
+          ) : (
+            displayUsers.map((userItem) => (
+              <button
+                key={userItem._id}
+                onClick={() => onSelectUser(userItem._id)}
+                className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                  selectedUser === userItem._id ? 'bg-blue-50 border-r-2 border-blue-600' : ''
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0 relative">
+                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">
+                        {userItem.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                      onlineUsers.has(userItem._id) ? 'bg-green-500' : 'bg-gray-400'
+                    }`}></div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {userItem.name}
+                    </p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {userItem.email}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

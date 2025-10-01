@@ -35,3 +35,39 @@ export const authAPI = {
     return response.json();
   },
 };
+
+export const usersAPI = {
+  getUsers: async () => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch users');
+    }
+
+    return response.json();
+  },
+
+  searchUsers: async (query) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/users/search?q=${encodeURIComponent(query)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to search users');
+    }
+
+    return response.json();
+  },
+};

@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/auth');
 const messageRoutes = require('./routes/messages');
 const Message = require('./models/Message');
+const userRoutes = require('./routes/users');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ message: 'Server is running!' });
@@ -44,9 +46,18 @@ io.on('connection', (socket) => {
     try {
       const jwt = require('jsonwebtoken');
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      onlineUsers.set(String(decoded.id), socket.id);
-      socket.userId = String(decoded.id);
+      const userId = String(decoded.id);
+      
+      onlineUsers.set(userId, socket.id);
+      socket.userId = userId;
+      
       console.log('Authenticated user:', socket.userId);
+      
+      socket.broadcast.emit('userOnline', userId);
+      
+      const usersList = Array.from(onlineUsers.keys()).map(id => ({ id }));
+      socket.emit('onlineUsers', usersList);
+      
     } catch (err) {
       console.log('Socket auth failed:', err.message);
     }
@@ -76,7 +87,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    if (socket.userId) onlineUsers.delete(socket.userId);
+    if (socket.userId) {
+      onlineUsers.delete(socket.userId);
+      socket.broadcast.emit('userOffline', socket.userId);
+    }
     console.log('Socket disconnected:', socket.id);
   });
 });
