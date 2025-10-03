@@ -5,23 +5,26 @@ import { usersAPI } from '../../services/api';
 
 const UserList = ({ selectedUser, onSelectUser }) => {
   const { user } = useAuth();
-  const { onlineUsers } = useSocket();
+  const { socket, onlineUsers } = useSocket();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    
+    if (socket) {
+      socket.emit('getOnlineUsers');
+    }
+  }, [socket]);
 
   const fetchUsers = async () => {
     try {
       const usersData = await usersAPI.getUsers();
       setUsers(usersData);
     } catch (err) {
-      console.error('Error fetching users:', err);
+      console.error('❌ Error fetching users:', err);
     } finally {
       setLoading(false);
     }
@@ -31,16 +34,14 @@ const UserList = ({ selectedUser, onSelectUser }) => {
     setSearchQuery(query);
     if (query.trim() === '') {
       setSearchResults([]);
-      setIsSearching(false);
       return;
     }
 
-    setIsSearching(true);
     try {
       const results = await usersAPI.searchUsers(query);
       setSearchResults(results);
     } catch (err) {
-      console.error('Error searching users:', err);
+      console.error('❌ Error searching users:', err);
       setSearchResults([]);
     }
   };
@@ -67,14 +68,14 @@ const UserList = ({ selectedUser, onSelectUser }) => {
 
   return (
     <div className="flex-1 overflow-y-auto flex flex-col">
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 bg-white">
         <div className="relative">
           <input
             type="text"
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
           <div className="absolute right-3 top-2.5">
             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,26 +83,36 @@ const UserList = ({ selectedUser, onSelectUser }) => {
             </svg>
           </div>
         </div>
+        
+        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+          <span>Online Users: {onlineUsers.size}</span>
+          <button 
+            onClick={() => socket?.emit('getOnlineUsers')}
+            className="text-blue-500 hover:text-blue-700"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-            {isSearching ? 'Search Results' : `All Users (${users.length})`}
+        <div className="p-3 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+            {searchQuery.trim() ? 'Search Results' : `All Users (${users.length})`}
           </h3>
         </div>
         
         <div className="divide-y divide-gray-100">
           {displayUsers.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              {isSearching ? 'No users found' : 'No users available'}
+            <div className="p-4 text-center text-gray-500 text-sm">
+              {searchQuery.trim() ? 'No users found' : 'No users available'}
             </div>
           ) : (
             displayUsers.map((userItem) => (
               <button
                 key={userItem._id}
                 onClick={() => onSelectUser(userItem._id)}
-                className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                className={`w-full p-3 text-left hover:bg-gray-50 transition-colors duration-200 ${
                   selectedUser === userItem._id ? 'bg-blue-50 border-r-2 border-blue-600' : ''
                 }`}
               >
@@ -113,14 +124,23 @@ const UserList = ({ selectedUser, onSelectUser }) => {
                       </span>
                     </div>
                     <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-                      onlineUsers.has(userItem._id) ? 'bg-green-500' : 'bg-gray-400'
+                      onlineUsers.has(userItem._id) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
                     }`}></div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {userItem.name}
-                    </p>
-                    <p className="text-sm text-gray-500 truncate">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {userItem.name}
+                      </p>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        onlineUsers.has(userItem._id) 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {onlineUsers.has(userItem._id) ? 'Online' : 'Offline'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 truncate mt-1">
                       {userItem.email}
                     </p>
                   </div>

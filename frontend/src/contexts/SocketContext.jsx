@@ -27,7 +27,7 @@ export const SocketProvider = ({ children }) => {
       });
 
       newSocket.on('connect', () => {
-        console.log('Connected to server');
+        console.log('✅ Connected to server with socket:', newSocket.id);
         
         const token = localStorage.getItem('token');
         if (token) {
@@ -35,31 +35,26 @@ export const SocketProvider = ({ children }) => {
         }
       });
 
-      newSocket.on('newMessage', (message) => {
-        console.log('New message received:', message);
-        setMessages(prev => [...prev, message]);
-      });
-
-      newSocket.on('messageSent', (message) => {
-        console.log('Message sent confirmation:', message);
-        setMessages(prev => [...prev, message]);
-      });
-
-      newSocket.on('errorMessage', (error) => {
-        console.error('Socket error:', error);
-      });
-
-      newSocket.on('disconnect', () => {
-        console.log('Disconnected from server');
+      newSocket.on('onlineUsersList', (usersList) => {
+        console.log('📋 Online users list:', usersList);
+        const usersMap = new Map();
+        usersList.forEach(userId => {
+          usersMap.set(userId, true);
+        });
+        setOnlineUsers(usersMap);
       });
 
       newSocket.on('userOnline', (userId) => {
-        console.log('User online:', userId);
-        setOnlineUsers(prev => new Map(prev.set(userId, true)));
+        console.log('🟢 User came online:', userId);
+        setOnlineUsers(prev => {
+          const newMap = new Map(prev);
+          newMap.set(userId, true);
+          return newMap;
+        });
       });
 
       newSocket.on('userOffline', (userId) => {
-        console.log('User offline:', userId);
+        console.log('🔴 User went offline:', userId);
         setOnlineUsers(prev => {
           const newMap = new Map(prev);
           newMap.delete(userId);
@@ -67,19 +62,72 @@ export const SocketProvider = ({ children }) => {
         });
       });
 
-      newSocket.on('onlineUsers', (users) => {
-        console.log('Online users:', users);
-        const usersMap = new Map(users.map(user => [user.id, true]));
-        setOnlineUsers(usersMap);
+      newSocket.on('newMessage', (message) => {
+        console.log('📨 New message received:', message);
+        setMessages(prev => {
+          const messageExists = prev.some(msg => 
+            msg._id === message._id || 
+            (msg.sender === message.sender && 
+             msg.recipient === message.recipient && 
+             msg.content === message.content &&
+             Math.abs(new Date(msg.createdAt) - new Date(message.createdAt)) < 1000)
+          );
+          
+          if (messageExists) {
+            console.log('⚠️ Duplicate message detected, skipping...');
+            return prev;
+          }
+          
+          return [...prev, message];
+        });
+      });
+
+      newSocket.on('messageSent', (message) => {
+        console.log('✅ Message sent confirmation:', message);
+        setMessages(prev => {
+          const messageExists = prev.some(msg => 
+            msg._id === message._id || 
+            (msg.sender === message.sender && 
+             msg.recipient === message.recipient && 
+             msg.content === message.content &&
+             Math.abs(new Date(msg.createdAt) - new Date(message.createdAt)) < 1000)
+          );
+          
+          if (messageExists) {
+            return prev;
+          }
+          
+          return [...prev, message];
+        });
+      });
+
+      newSocket.on('errorMessage', (error) => {
+        console.error('❌ Socket error:', error);
+      });
+
+      newSocket.on('disconnect', (reason) => {
+        console.log('🔌 Disconnected from server:', reason);
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.error('❌ Connection error:', error);
       });
 
       setSocket(newSocket);
 
       return () => {
+        console.log('🔄 Cleaning up socket connection...');
         newSocket.close();
       };
+    } else {
+      if (socket) {
+        socket.close();
+        setSocket(null);
+        setOnlineUsers(new Map());
+        setMessages([]);
+      }
     }
-  }, [user]);
+  }, [user]); 
 
   const value = {
     socket,
