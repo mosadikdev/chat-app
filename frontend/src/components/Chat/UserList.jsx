@@ -52,7 +52,7 @@ const UserList = ({ selectedUser, onSelectUser }) => {
     return (
       <div className="p-4">
         <div className="animate-pulse space-y-3">
-          {[1, 2, 3].map((n) => (
+          {[1, 2, 3, 4].map((n) => (
             <div key={n} className="flex items-center space-x-3">
               <div className="rounded-full bg-gray-300 h-10 w-10"></div>
               <div className="flex-1 space-y-2">
@@ -68,7 +68,7 @@ const UserList = ({ selectedUser, onSelectUser }) => {
 
   return (
     <div className="flex-1 overflow-y-auto flex flex-col">
-      <div className="p-4 border-b border-gray-200 bg-white">
+      <div className="p-3 md:p-4 border-b border-gray-200 bg-white">
         <div className="relative">
           <input
             type="text"
@@ -85,10 +85,11 @@ const UserList = ({ selectedUser, onSelectUser }) => {
         </div>
         
         <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-          <span>Online Users: {onlineUsers.size}</span>
+          <span>Online: {onlineUsers.size}</span>
+          <span>Total: {users.length}</span>
           <button 
             onClick={() => socket?.emit('getOnlineUsers')}
-            className="text-blue-500 hover:text-blue-700"
+            className="text-blue-500 hover:text-blue-700 text-xs"
           >
             Refresh
           </button>
@@ -96,9 +97,9 @@ const UserList = ({ selectedUser, onSelectUser }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="p-3 border-b border-gray-200 bg-gray-50">
+        <div className="p-3 md:p-4 border-b border-gray-200 bg-gray-50">
           <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-            {searchQuery.trim() ? 'Search Results' : `All Users (${users.length})`}
+            {searchQuery.trim() ? 'Search Results' : `All Users`}
           </h3>
         </div>
         
@@ -132,7 +133,7 @@ const UserList = ({ selectedUser, onSelectUser }) => {
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {userItem.name}
                       </p>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
+                      <span className={`text-xs px-2 py-1 rounded-full hidden xs:inline-block ${
                         onlineUsers.has(userItem._id) 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-gray-100 text-gray-800'
