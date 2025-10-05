@@ -106,12 +106,12 @@ useEffect(() => {
   };
 
   const handleSendMessage = (content) => {
-    if (selectedUser && content.trim() && socket) {
-      console.log('📤 Sending message to:', selectedUser, 'content:', content);
-      socket.emit('sendMessage', {
-        to: selectedUser,
-        content: content.trim()
-      });
+  if (selectedUser && content.trim() && socket) {
+    console.log('📤 Sending message to:', selectedUser, 'content:', content);
+    socket.emit('sendMessage', {
+      to: selectedUser,
+      content: content.trim()
+    });
     }
   };
 

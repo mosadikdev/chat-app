@@ -16,7 +16,18 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState(new Map());
   const [messages, setMessages] = useState([]);
+  const [conversations, setConversations] = useState([]); 
   const { user } = useAuth();
+
+  const updateConversations = async () => {
+    try {
+      const { conversationsAPI } = await import('../services/api');
+      const conversationsData = await conversationsAPI.getConversations();
+      setConversations(conversationsData);
+    } catch (err) {
+      console.error('❌ Error updating conversations:', err);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -33,6 +44,8 @@ export const SocketProvider = ({ children }) => {
         if (token) {
           newSocket.emit('authenticate', token);
         }
+
+        updateConversations();
       });
 
       newSocket.on('onlineUsersList', (usersList) => {
@@ -80,6 +93,8 @@ export const SocketProvider = ({ children }) => {
           
           return [...prev, message];
         });
+
+        updateConversations();
       });
 
       newSocket.on('messageSent', (message) => {
@@ -99,6 +114,8 @@ export const SocketProvider = ({ children }) => {
           
           return [...prev, message];
         });
+
+        updateConversations();
       });
 
       newSocket.on('errorMessage', (error) => {
@@ -125,15 +142,18 @@ export const SocketProvider = ({ children }) => {
         setSocket(null);
         setOnlineUsers(new Map());
         setMessages([]);
+        setConversations([]);
       }
     }
-  }, [user]); 
+  }, [user]);
 
   const value = {
     socket,
     onlineUsers,
     messages,
-    setMessages
+    setMessages,
+    conversations, 
+    updateConversations 
   };
 
   return (

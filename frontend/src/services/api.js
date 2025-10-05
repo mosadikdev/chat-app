@@ -89,6 +89,23 @@ export const conversationsAPI = {
 
     return response.json();
   },
+
+  checkConversation: async (otherUserId) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/conversations/check/${otherUserId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to check conversation');
+    }
+
+    return response.json();
+  }
 };
 
 export const formatRelativeTime = (timestamp) => {
