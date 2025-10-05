@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const messageRoutes = require('./routes/messages');
 const userRoutes = require('./routes/users'); 
 const Message = require('./models/Message');
+const conversationRoutes = require('./routes/conversations');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/conversations', conversationRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ 

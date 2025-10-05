@@ -71,3 +71,46 @@ export const usersAPI = {
     return response.json();
   },
 };
+
+export const conversationsAPI = {
+  getConversations: async () => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/conversations`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch conversations');
+    }
+
+    return response.json();
+  },
+};
+
+export const formatRelativeTime = (timestamp) => {
+  const now = new Date();
+  const messageTime = new Date(timestamp);
+  const diffInSeconds = Math.floor((now - messageTime) / 1000);
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  const diffInDays = Math.floor(diffInHours / 24);
+
+  if (diffInSeconds < 60) {
+    return 'Now';
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes}m ago`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours}h ago`;
+  } else if (diffInDays < 7) {
+    return `${diffInDays}d ago`;
+  } else {
+    return messageTime.toLocaleDateString([], { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  }
+};

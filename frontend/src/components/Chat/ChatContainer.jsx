@@ -59,6 +59,22 @@ const ChatContainer = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+useEffect(() => {
+  if (socket) {
+    const handleNewMessage = () => {
+      console.log('New message received, conversations might need refresh');
+    };
+
+    socket.on('newMessage', handleNewMessage);
+    socket.on('messageSent', handleNewMessage);
+
+    return () => {
+      socket.off('newMessage', handleNewMessage);
+      socket.off('messageSent', handleNewMessage);
+    };
+  }
+}, [socket]);
+
   const fetchUserInfo = async (userId) => {
     try {
       const users = await usersAPI.getUsers();
