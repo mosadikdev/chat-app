@@ -4,6 +4,7 @@ import { useSocket } from '../../contexts/SocketContext';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import UserList from './UserList';
+import Profile from '../Profile/Profile';
 import { usersAPI } from '../../services/api';
 
 const ChatContainer = () => {
@@ -12,6 +13,7 @@ const ChatContainer = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedUserInfo, setSelectedUserInfo] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
     setMessages([]);
@@ -143,14 +145,22 @@ useEffect(() => {
       `}>
         <div className="p-4 border-b border-gray-200 bg-blue-600 text-white">
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold">Chat App</h1>
-            <button
-              onClick={handleLogout}
-              className="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded transition-colors"
-            >
-              Logout
-            </button>
-          </div>
+  <h1 className="text-xl font-bold">Chat App</h1>
+  <div className="flex space-x-2">
+    <button
+      onClick={() => setIsProfileOpen(true)}
+      className="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded transition-colors"
+    >
+      Profile
+    </button>
+    <button
+      onClick={handleLogout}
+      className="text-sm bg-red-600 hover:bg-red-700 px-3 py-1 rounded transition-colors"
+    >
+      Logout
+    </button>
+  </div>
+</div>
           <p className="text-blue-100 text-sm mt-1 truncate">Welcome, {user?.name}</p>
           <div className="flex items-center mt-2 text-blue-200 text-xs">
             <div className={`w-2 h-2 rounded-full mr-2 ${socket?.connected ? 'bg-green-400' : 'bg-red-400'}`}></div>
@@ -186,11 +196,14 @@ useEffect(() => {
                 </button>
                 
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {selectedUserInfo?.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  </div>
+                  <img
+  src={selectedUserInfo?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUserInfo?.name || 'User')}&background=10b981&color=fff&size=128`}
+  alt={selectedUserInfo?.name || 'User'}
+  className="w-10 h-10 rounded-full object-cover border-2 border-white"
+  onError={(e) => {
+    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUserInfo?.name || 'User')}&background=10b981&color=fff&size=128`;
+  }}
+/>
                   <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
                     onlineUsers.has(selectedUser) ? 'bg-green-500' : 'bg-gray-400'
                   }`}></div>
@@ -234,6 +247,10 @@ useEffect(() => {
           </div>
         )}
       </div>
+      <Profile 
+  isOpen={isProfileOpen}
+  onClose={() => setIsProfileOpen(false)}
+/>
     </div>
   );
 };

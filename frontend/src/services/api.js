@@ -131,3 +131,77 @@ export const formatRelativeTime = (timestamp) => {
     });
   }
 };
+
+export const profileAPI = {
+  getProfile: async () => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/profile`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch profile');
+    }
+
+    return response.json();
+  },
+
+  getUserProfile: async (userId) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/profile/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch user profile');
+    }
+
+    return response.json();
+  },
+
+  updateProfile: async (profileData) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update profile');
+    }
+
+    return response.json();
+  },
+
+  changePassword: async (passwordData) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/profile/password`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(passwordData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to change password');
+    }
+
+    return response.json();
+  }
+};
