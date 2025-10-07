@@ -167,20 +167,37 @@ export const profileAPI = {
     return response.json();
   },
 
-  updateProfile: async (profileData) => {
+  updateProfile: async (formData) => {
     const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE}/profile`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(profileData),
+      body: formData, 
     });
 
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to update profile');
+    }
+
+    return response.json();
+  },
+
+  deleteProfilePicture: async () => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/profile/picture`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to delete profile picture');
     }
 
     return response.json();
