@@ -33,10 +33,19 @@ router.get('/:userId', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    const conversationsCount = await Message.countDocuments({
+      $or: [
+        { sender: req.params.userId },
+        { recipient: req.params.userId }
+      ]
+    });
+    
     const userObj = user.toObject();
     if (userObj.profilePicture && !userObj.profilePicture.startsWith('http')) {
       userObj.profilePicture = `${req.protocol}://${req.get('host')}/${userObj.profilePicture}`;
     }
+    
+    userObj.conversationsCount = conversationsCount;
     
     res.json(userObj);
   } catch (err) {

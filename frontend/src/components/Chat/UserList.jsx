@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { usersAPI, formatRelativeTime } from '../../services/api';
+import UserProfile from '../Profile/UserProfile';
 
 const UserList = ({ selectedUser, onSelectUser }) => {
   const { user } = useAuth();
@@ -10,6 +11,8 @@ const UserList = ({ selectedUser, onSelectUser }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('chats');
+  const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
+  const [selectedProfileUser, setSelectedProfileUser] = useState(null);
 
   useEffect(() => {
     fetchAllUsers();
@@ -30,7 +33,7 @@ const UserList = ({ selectedUser, onSelectUser }) => {
     }
   };
 
-  const handleSearch = async (query) => {
+  const handleSearch = (query) => {
     setSearchQuery(query);
   };
 
@@ -40,21 +43,31 @@ const UserList = ({ selectedUser, onSelectUser }) => {
     socket?.emit('getOnlineUsers');
   };
 
+  const handleUserProfileClick = (userId, e) => {
+    e.stopPropagation(); 
+    setSelectedProfileUser(userId);
+    setIsUserProfileOpen(true);
+  };
+
   const filteredConversations = conversations.filter(conv =>
-    conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.email.toLowerCase().includes(searchQuery.toLowerCase())
+    conv.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conv.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredUsers = allUsers.filter(userItem =>
-    userItem.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    userItem.email.toLowerCase().includes(searchQuery.toLowerCase())
+    userItem.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    userItem.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const usersWithoutConversations = allUsers.filter(userItem =>
     !conversations.some(conv => conv._id === userItem._id)
   ).filter(userItem =>
-    userItem.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    userItem.email.toLowerCase().includes(searchQuery.toLowerCase())
+    userItem.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    userItem.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const usersWithConversations = filteredUsers.filter(userItem =>
+    conversations.some(conv => conv._id === userItem._id)
   );
 
   if (loading) {
@@ -151,11 +164,14 @@ const UserList = ({ selectedUser, onSelectUser }) => {
                 >
                   <div className="flex items-center space-x-3">
                     <div className="flex-shrink-0 relative">
-                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-semibold text-sm">
-                          {conversation.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
+                      <img
+                        src={conversation.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(conversation.name)}&background=6366f1&color=fff&size=128`}
+                        alt={conversation.name}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                        onError={(e) => {
+                          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conversation.name)}&background=6366f1&color=fff&size=128`;
+                        }}
+                      />
                       <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
                         onlineUsers.has(conversation._id) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
                       }`}></div>
@@ -187,17 +203,13 @@ const UserList = ({ selectedUser, onSelectUser }) => {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {filteredUsers.filter(userItem => 
-              conversations.some(conv => conv._id === userItem._id)
-            ).length > 0 && (
+            {usersWithConversations.length > 0 && (
               <div className="p-2 bg-gray-50">
                 <p className="text-xs font-medium text-gray-500 px-2">With conversations</p>
               </div>
             )}
             
-            {filteredUsers.filter(userItem => 
-              conversations.some(conv => conv._id === userItem._id)
-            ).map((userItem) => (
+            {usersWithConversations.map((userItem) => (
               <button
                 key={userItem._id}
                 onClick={() => onSelectUser(userItem._id)}
@@ -208,27 +220,34 @@ const UserList = ({ selectedUser, onSelectUser }) => {
                 <div className="flex items-center space-x-3">
                   <div className="flex-shrink-0 relative">
                     <img
-  src={userItem.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(userItem.name)}&background=6366f1&color=fff&size=128`}
-  alt={userItem.name}
-  className="w-10 h-10 rounded-full object-cover border-2 border-white"
-  onError={(e) => {
-    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userItem.name)}&background=6366f1&color=fff&size=128`;
-  }}
-/>
+                      src={userItem.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(userItem.name)}&background=6366f1&color=fff&size=128`}
+                      alt={userItem.name}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                      onError={(e) => {
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userItem.name)}&background=6366f1&color=fff&size=128`;
+                      }}
+                    />
                     <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
                       onlineUsers.has(userItem._id) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
                     }`}></div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                    <div className="flex items-center justify-between mb-1">
+                      <button
+                        onClick={(e) => handleUserProfileClick(userItem._id, e)}
+                        className="text-sm font-medium text-gray-900 truncate hover:text-blue-600 transition-colors text-left flex-1"
+                      >
                         {userItem.name}
-                      </p>
-                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                        Has chat
+                      </button>
+                      <span className={`text-xs px-2 py-1 rounded-full hidden xs:inline-block ${
+                        onlineUsers.has(userItem._id) 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {onlineUsers.has(userItem._id) ? 'Online' : 'Offline'}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 truncate mt-1">
+                    <p className="text-xs text-gray-500 truncate">
                       {userItem.email}
                     </p>
                   </div>
@@ -252,28 +271,34 @@ const UserList = ({ selectedUser, onSelectUser }) => {
               >
                 <div className="flex items-center space-x-3">
                   <div className="flex-shrink-0 relative">
-                    <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">
-                        {userItem.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                    <img
+                      src={userItem.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(userItem.name)}&background=9ca3af&color=fff&size=128`}
+                      alt={userItem.name}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                      onError={(e) => {
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userItem.name)}&background=9ca3af&color=fff&size=128`;
+                      }}
+                    />
                     <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
                       onlineUsers.has(userItem._id) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
                     }`}></div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                    <div className="flex items-center justify-between mb-1">
+                      <button
+                        onClick={(e) => handleUserProfileClick(userItem._id, e)}
+                        className="text-sm font-medium text-gray-900 truncate hover:text-blue-600 transition-colors text-left flex-1"
+                      >
                         {userItem.name}
-                      </p>
+                      </button>
                       <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
                         New
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 truncate mt-1">
+                    <p className="text-xs text-gray-500 truncate mb-1">
                       {userItem.email}
                     </p>
-                    <p className="text-xs text-blue-600 mt-1">
+                    <p className="text-xs text-blue-600">
                       Start a conversation
                     </p>
                   </div>
@@ -289,6 +314,15 @@ const UserList = ({ selectedUser, onSelectUser }) => {
           </div>
         )}
       </div>
+
+      <UserProfile
+        userId={selectedProfileUser}
+        isOpen={isUserProfileOpen}
+        onClose={() => {
+          setIsUserProfileOpen(false);
+          setSelectedProfileUser(null);
+        }}
+      />
     </div>
   );
 };
