@@ -48,6 +48,14 @@ export const SocketProvider = ({ children }) => {
         updateConversations();
       });
 
+      newSocket.on('userStatusUpdate', (data) => {
+  console.log('🔄 User status update:', data);
+});
+
+newSocket.on('userActivity', (data) => {
+  console.log('📱 User activity:', data);
+});
+
       newSocket.on('onlineUsersList', (usersList) => {
         console.log('📋 Online users list:', usersList);
         const usersMap = new Map();

@@ -11,9 +11,12 @@ const userRoutes = require('./routes/users');
 const Message = require('./models/Message');
 const conversationRoutes = require('./routes/conversations');
 const profileRoutes = require('./routes/profile');
+const User = require('./models/User');
+const activityRoutes = require('./routes/activity');
 
 
 const app = express();
+
 
 app.use(cors({
   origin: "http://localhost:3000",
@@ -32,6 +35,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/uploads', express.static('uploads'));
+app.use('/api/activity', activityRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -84,6 +88,8 @@ io.on('connection', (socket) => {
       const jwt = require('jsonwebtoken');
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const userId = String(decoded.id);
+      
+      await User.updateUserStatus(userId, 'online');
       
       onlineUsers.set(userId, socket.id);
       userSockets.set(socket.id, {
@@ -186,12 +192,14 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', (reason) => {
+  socket.on('disconnect', async (reason) => {
     console.log('🔌 Socket disconnected:', socket.id, 'Reason:', reason);
     
     const userInfo = userSockets.get(socket.id);
     if (userInfo && userInfo.userId) {
       const userId = userInfo.userId;
+      
+      await User.updateUserStatus(userId, 'offline');
       
       onlineUsers.delete(userId);
       userSockets.delete(socket.id);

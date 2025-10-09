@@ -36,9 +36,20 @@ const UserSchema = new mongoose.Schema({
   lastSeen: {
     type: Date,
     default: Date.now
+  },
+  lastActive: {
+    type: Date,
+    default: Date.now
   }
 }, { 
   timestamps: true 
+});
+
+UserSchema.pre('save', function(next) {
+  if (this.isModified()) {
+    this.lastActive = new Date();
+  }
+  next();
 });
 
 UserSchema.virtual('initials').get(function() {
@@ -57,5 +68,18 @@ UserSchema.virtual('defaultAvatar').get(function() {
   const color = colors[Math.abs(this.name.length) % colors.length];
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.name)}&background=${color}&color=fff&size=128`;
 });
+
+UserSchema.statics.updateUserStatus = async function(userId, status) {
+  try {
+    const updateData = { status };
+    if (status === 'offline') {
+      updateData.lastSeen = new Date();
+    }
+    return await this.findByIdAndUpdate(userId, updateData, { new: true });
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    throw error;
+  }
+};
 
 module.exports = mongoose.model('User', UserSchema);

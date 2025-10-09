@@ -47,18 +47,46 @@ const UserProfile = ({ userId, onClose, isOpen }) => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=128`;
   };
 
-  const formatLastSeen = (lastSeen) => {
-    if (!lastSeen) return 'Unknown';
-    
-    const now = new Date();
-    const lastSeenDate = new Date(lastSeen);
-    const diffInMinutes = Math.floor((now - lastSeenDate) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return lastSeenDate.toLocaleDateString();
-  };
+  const formatLastSeen = (lastSeen, isOnline = false) => {
+  if (isOnline) {
+    return 'Online now';
+  }
+  
+  if (!lastSeen) return 'Never been online';
+  
+  const now = new Date();
+  const lastSeenDate = new Date(lastSeen);
+  const diffInSeconds = Math.floor((now - lastSeenDate) / 1000);
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  const diffInDays = Math.floor(diffInHours / 24);
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  const diffInMonths = Math.floor(diffInDays / 30);
+
+  if (diffInSeconds < 30) {
+    return 'Just now';
+  } else if (diffInSeconds < 60) {
+    return `${diffInSeconds} seconds ago`;
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+  } else if (diffInDays < 7) {
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  } else if (diffInWeeks < 4) {
+    return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
+  } else if (diffInMonths < 12) {
+    return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
+  } else {
+    return lastSeenDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+};
+
+
 
   if (!isOpen) return null;
 
@@ -126,19 +154,21 @@ const UserProfile = ({ userId, onClose, isOpen }) => {
               </div>
 
               <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-900 mb-1">{user.name}</h3>
-                <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
-                  <span className={`flex items-center ${onlineUsers.has(userId) ? 'text-green-600' : 'text-gray-500'}`}>
-                    <div className={`w-2 h-2 rounded-full mr-1 ${onlineUsers.has(userId) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                    {onlineUsers.has(userId) ? 'Online' : 'Offline'}
-                  </span>
-                  {!onlineUsers.has(userId) && user.lastSeen && (
-                    <span className="text-gray-500">
-                      Last seen: {formatLastSeen(user.lastSeen)}
-                    </span>
-                  )}
-                </div>
-              </div>
+  <h3 className="text-2xl font-bold text-gray-900 mb-1">{user.name}</h3>
+  <div className="flex flex-col items-center space-y-2 text-sm text-gray-600">
+    <span className={`flex items-center ${onlineUsers.has(userId) ? 'text-green-600' : 'text-gray-500'}`}>
+      <div className={`w-2 h-2 rounded-full mr-2 ${onlineUsers.has(userId) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+      {onlineUsers.has(userId) ? 'Online' : 'Offline'}
+    </span>
+    
+    {!onlineUsers.has(userId) && user.lastSeen && (
+      <span className="text-gray-500 text-sm">
+        Last seen: {formatLastSeen(user.lastSeen)}
+      </span>
+    )}
+    
+  </div>
+</div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
@@ -153,18 +183,7 @@ const UserProfile = ({ userId, onClose, isOpen }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{user.conversationsCount || 0}</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">Conversations</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {onlineUsers.has(userId) ? 'Now' : formatLastSeen(user.lastSeen)}
-                  </div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">Active</div>
-                </div>
-              </div>
+             
 
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                 <h4 className="text-sm font-medium text-blue-800 mb-2">Contact Information</h4>

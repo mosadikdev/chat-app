@@ -31,6 +31,27 @@ const ChatContainer = () => {
     }
   }, [selectedUser, setMessages]);
 
+
+  useEffect(() => {
+  if (!socket || !user) return;
+
+  const updateActivity = () => {
+    console.log('🔄 User activity detected');
+  };
+
+  const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+  
+  events.forEach(event => {
+    window.addEventListener(event, updateActivity, { passive: true });
+  });
+
+  return () => {
+    events.forEach(event => {
+      window.removeEventListener(event, updateActivity);
+    });
+  };
+}, [socket, user]);
+
   useEffect(() => {
     if (socket) {
       const handleReconnect = () => {
