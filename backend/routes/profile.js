@@ -28,29 +28,30 @@ router.get('/', auth, async (req, res) => {
 
 router.get('/:userId', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).select('-password -email');
+    console.log('🔍 Fetching profile for user ID:', req.params.userId);
+    
+    if (!req.params.userId || req.params.userId === 'undefined') {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    const user = await User.findById(req.params.userId).select('-password');
     if (!user) {
+      console.log('❌ User not found with ID:', req.params.userId);
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    const conversationsCount = await Message.countDocuments({
-      $or: [
-        { sender: req.params.userId },
-        { recipient: req.params.userId }
-      ]
-    });
     
     const userObj = user.toObject();
     if (userObj.profilePicture && !userObj.profilePicture.startsWith('http')) {
       userObj.profilePicture = `${req.protocol}://${req.get('host')}/${userObj.profilePicture}`;
     }
     
-    userObj.conversationsCount = conversationsCount;
+    userObj.conversationsCount = 0;
     
+    console.log('✅ User profile fetched successfully:', userObj.name);
     res.json(userObj);
   } catch (err) {
-    console.error('Error fetching user profile:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Error fetching user profile:', err);
+    res.status(500).json({ message: 'Server error: ' + err.message });
   }
 });
 

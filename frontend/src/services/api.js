@@ -151,20 +151,51 @@ export const profileAPI = {
   },
 
   getUserProfile: async (userId) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE}/profile/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch user profile');
+    if (!userId || userId === 'undefined' || userId === 'null') {
+      throw new Error('Invalid user ID');
     }
 
-    return response.json();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      console.log('🔄 Fetching user profile for ID:', userId);
+      const response = await fetch(`${API_BASE}/profile/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Server response error:', errorText);
+        
+        let errorMessage = 'Failed to fetch user profile';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || `HTTP error! status: ${response.status}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const userData = await response.json();
+      console.log('✅ User profile data received:', userData);
+      return userData;
+    } catch (err) {
+      console.error('❌ Network error fetching user profile:', err);
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        throw new Error('Cannot connect to server. Please check your connection.');
+      }
+      throw err;
+    }
   },
 
   updateProfile: async (formData) => {

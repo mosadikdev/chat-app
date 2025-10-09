@@ -11,6 +11,10 @@ const UserProfile = ({ userId, onClose, isOpen }) => {
   useEffect(() => {
     if (userId && isOpen) {
       fetchUserProfile();
+    } else {
+      setUser(null);
+      setError('');
+      setLoading(true);
     }
   }, [userId, isOpen]);
 
@@ -18,20 +22,29 @@ const UserProfile = ({ userId, onClose, isOpen }) => {
     try {
       setLoading(true);
       setError('');
+      setUser(null);
+      
+      console.log('🎯 Opening profile for user ID:', userId);
+      
+      if (!userId || userId === 'undefined' || userId === 'null') {
+        throw new Error('Invalid user ID provided');
+      }
+
       const userData = await profileAPI.getUserProfile(userId);
       setUser(userData);
     } catch (err) {
-      setError('Failed to load user profile');
-      console.error('Error fetching user profile:', err);
+      console.error('❌ Error in fetchUserProfile:', err);
+      setError(err.message || 'Failed to load user profile');
     } finally {
       setLoading(false);
     }
   };
 
   const getDefaultAvatar = (name) => {
+    if (!name) name = 'User';
     const colors = ['FF6B6B', '4ECDC4', '45B7D1', '96CEB4', 'FFEAA7'];
-    const color = colors[Math.abs(name?.length || 0) % colors.length];
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=${color}&color=fff&size=128`;
+    const color = colors[Math.abs(name.length) % colors.length];
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=128`;
   };
 
   const formatLastSeen = (lastSeen) => {
@@ -66,19 +79,32 @@ const UserProfile = ({ userId, onClose, isOpen }) => {
 
         <div className="p-6">
           {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-gray-600">Loading profile...</p>
+              <p className="text-sm text-gray-500 mt-2">User ID: {userId}</p>
             </div>
           ) : error ? (
             <div className="text-center py-8">
-              <div className="text-red-500 text-lg mb-2">⚠️</div>
-              <p className="text-red-600 font-medium">{error}</p>
-              <button
-                onClick={fetchUserProfile}
-                className="mt-4 text-blue-600 hover:text-blue-700 text-sm"
-              >
-                Try Again
-              </button>
+              <div className="text-red-500 text-4xl mb-4">⚠️</div>
+              <p className="text-red-600 font-medium text-lg mb-2">{error}</p>
+              <p className="text-gray-500 text-sm mb-4">
+                User ID: {userId}
+              </p>
+              <div className="flex justify-center space-x-3">
+                <button
+                  onClick={fetchUserProfile}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={onClose}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           ) : user ? (
             <div className="space-y-6">
@@ -89,11 +115,12 @@ const UserProfile = ({ userId, onClose, isOpen }) => {
                     alt={user.name}
                     className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
                     onError={(e) => {
+                      console.log('🖼️ Image load error, using default avatar');
                       e.target.src = getDefaultAvatar(user.name);
                     }}
                   />
                   <div className={`absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-4 border-white ${
-                    onlineUsers.has(userId) ? 'bg-green-500' : 'bg-gray-400'
+                    onlineUsers.has(userId) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
                   }`}></div>
                 </div>
               </div>
@@ -146,21 +173,21 @@ const UserProfile = ({ userId, onClose, isOpen }) => {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
-                    {user.email}
+                    {user.email || 'Email not available'}
                   </div>
                   <div className="flex items-center text-sm text-blue-700">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Member since {new Date(user.createdAt).toLocaleDateString()}
+                    Member since {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
                   </div>
                 </div>
               </div>
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="text-gray-500 text-lg mb-2">😕</div>
-              <p className="text-gray-600 font-medium">User not found</p>
+              <div className="text-gray-500 text-4xl mb-2">😕</div>
+              <p className="text-gray-600 font-medium">User data not available</p>
             </div>
           )}
         </div>
