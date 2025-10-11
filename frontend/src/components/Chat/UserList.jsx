@@ -89,7 +89,7 @@ const UserList = ({ selectedUser, onSelectUser }) => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto flex flex-col">
+    <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
       <div className="p-3 md:p-4 border-b border-gray-200 bg-white">
         <div className="relative">
           <input
